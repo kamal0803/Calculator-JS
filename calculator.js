@@ -68,7 +68,7 @@ $("button").on("click", function() {
     }else if($(this).hasClass("V") || $(this).hasClass("operator")){
         dis_value = dis_value + $(this).val();
 
-        $("#display_value").val(dis_value);
+        $("#display_value").val(dis_value)[0].scrollLeft = $("#display_value")[0].scrollWidth;
     }
 
 })
