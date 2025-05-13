@@ -2,12 +2,15 @@ let dis_value = "";
 let numbers = [];
 let operators = [];
 
+var totalButtons = document.querySelectorAll("button").length;
+
 function clearCalculator(){
 
     dis_value = "";
     numbers = [];
     operators = [];
-    $("#display_value").val("");
+
+    document.getElementById("display_value").value = "";
 
 }
 function displayValueSep(dis_value){
@@ -56,19 +59,48 @@ function calculateEverything(numbers, operators) {
 
 }
 
-$("button").on("click", function() {
-    if ($(this).hasClass("equals")){
+for(var i = 0; i<totalButtons; i++){
+    document.querySelectorAll("button")[i].addEventListener("click", function(){
+        if(this.classList.contains("operator") || this.classList.contains("V")){
+            dis_value = dis_value + this.value;
 
+            let displayElem = document.getElementById("display_value");
+            displayElem.value = dis_value;
+            displayElem.scrollLeft = displayElem.scrollWidth;
+
+        }else if(this.classList.contains("clear")){
+            clearCalculator();
+        }else if(this.classList.contains("equals")){
+            numbers, operators = displayValueSep(dis_value);
+            answer = calculateEverything(numbers, operators);
+            document.getElementById("display_value").value = answer;
+
+        }
+    });
+};
+
+document.addEventListener("keydown", function(event){
+    
+    const matchedButton = document.querySelector(`button[value="${event.key}"]`);
+    
+    if(matchedButton && (matchedButton.classList.contains("operator") || matchedButton.classList.contains("V"))){
+        dis_value = dis_value + event.key;
+
+        displayElem = document.getElementById("display_value");
+        displayElem.value = dis_value;
+        displayElem.scrollLeft = displayElem.scrollWidth;
+    }else if(matchedButton && matchedButton.classList.contains("clear")){
+        clearCalculator();
+    }else if(matchedButton && matchedButton.classList.contains("equals")){
         numbers, operators = displayValueSep(dis_value);
         answer = calculateEverything(numbers, operators);
-        $("#display_value").val(answer);
+        document.getElementById("display_value").value = answer;
 
-    }else if($(this).hasClass("clear")){
-        clearCalculator();
-    }else if($(this).hasClass("V") || $(this).hasClass("operator")){
-        dis_value = dis_value + $(this).val();
+    }else if(!matchedButton && event.key == "Enter"){
+        numbers, operators = displayValueSep(dis_value);
+        answer = calculateEverything(numbers, operators);
+        document.getElementById("display_value").value = answer;
 
-        $("#display_value").val(dis_value)[0].scrollLeft = $("#display_value")[0].scrollWidth;
     }
 
-})
+});
