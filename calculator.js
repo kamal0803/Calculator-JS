@@ -1,106 +1,157 @@
-let dis_value = "";
-let numbers = [];
-let operators = [];
-
 var totalButtons = document.querySelectorAll("button").length;
 
-function clearCalculator(){
+let numbers_operators = [];
+let currentNumber = true;
+let valueStr = "0"
+let displayStr = ""
 
-    dis_value = "";
-    numbers = [];
-    operators = [];
+function handleInput(value, type){
 
-    document.getElementById("display_value").value = "";
+    if(type === "number"){
+        if(value === "." && valueStr.includes(".")) return;
 
-}
-function displayValueSep(dis_value){
+        displayStr = displayStr + value;
 
-    numbers = dis_value.match(/\d+(\.\d+)?/g).map(parseFloat);
-    operators = dis_value.match(/[+\-*/]/g) || [];
-    
-    return numbers, operators;
-}
+        valueStr = valueStr + value;
 
-function calculateEverything(numbers, operators) {
-      
-    for(let i = 0; i < operators.length; i++){
-        if (operators[i] == "/"){
-            numbers[i] = numbers[i]/numbers[i+1];
-            numbers.splice(i + 1, 1);
-            operators.splice(i, 1);
-            i = -1;
-        }
+        var displayElem = document.getElementById("display_value");
+        displayElem.value = displayStr;
+        displayElem.scrollLeft = displayElem.scrollWidth;
+
+        currentNumber = true;
     }
 
-    for(let i = 0; i < operators.length; i++){
-        if (operators[i] == "*"){
-            numbers[i] = numbers[i]*numbers[i+1];
-            numbers.splice(i + 1, 1);
-            operators.splice(i, 1);
-            i = -1;
-        }
-    }
-  
-    for (let i = 0; i < operators.length; i++) {
-        if (operators[i] == "+") {
-            numbers[i] = numbers[i] + numbers[i + 1];
-            numbers.splice(i + 1, 1);
-            operators.splice(i, 1);
-            i = -1;
-        }else if(operators[i] == "-"){
-            numbers[i] = numbers[i] - numbers[i + 1];
-            numbers.splice(i + 1, 1);
-            operators.splice(i, 1);
-            i = -1;
-        }
-    }
+    else if(type === "operator" && currentNumber){
+        
+        displayStr = displayStr + value;
 
-    return numbers;
-
-}
-
-for(var i = 0; i<totalButtons; i++){
-    document.querySelectorAll("button")[i].addEventListener("click", function(){
-        if(this.classList.contains("operator") || this.classList.contains("V")){
-            dis_value = dis_value + this.value;
-
-            let displayElem = document.getElementById("display_value");
-            displayElem.value = dis_value;
-            displayElem.scrollLeft = displayElem.scrollWidth;
-
-        }else if(this.classList.contains("clear")){
-            clearCalculator();
-        }else if(this.classList.contains("equals")){
-            numbers, operators = displayValueSep(dis_value);
-            answer = calculateEverything(numbers, operators);
-            document.getElementById("display_value").value = answer;
-
-        }
-    });
-};
-
-document.addEventListener("keydown", function(event){
-    
-    const matchedButton = document.querySelector(`button[value="${event.key}"]`);
-    
-    if(matchedButton && (matchedButton.classList.contains("operator") || matchedButton.classList.contains("V"))){
-        dis_value = dis_value + event.key;
+        valueStr = valueStr + value;
 
         displayElem = document.getElementById("display_value");
-        displayElem.value = dis_value;
+        displayElem.value = displayStr;
         displayElem.scrollLeft = displayElem.scrollWidth;
-    }else if(matchedButton && matchedButton.classList.contains("clear")){
-        clearCalculator();
-    }else if(matchedButton && matchedButton.classList.contains("equals")){
-        numbers, operators = displayValueSep(dis_value);
-        answer = calculateEverything(numbers, operators);
-        document.getElementById("display_value").value = answer;
 
-    }else if(!matchedButton && event.key == "Enter"){
-        numbers, operators = displayValueSep(dis_value);
-        answer = calculateEverything(numbers, operators);
-        document.getElementById("display_value").value = answer;
+        currentNumber = false;
 
+        const match = valueStr.match(/^(\d+(\.\d+)?)([+\-*/])$/);
+        if(match){
+            numbers_operators.push(parseFloat(match[1]));
+            numbers_operators.push(match[3]);
+            valueStr = "";
+        }
+    }
+
+    else if(displayStr && type === "equals"){
+
+        displayStr = displayStr + "Enter"
+        document.getElementById("display_value").value = displayStr;
+
+        numbers_operators.push(parseFloat(valueStr));
+        numbers_operators.push("Enter");
+        // console.log(numbers_operators);
+
+        valueStr = "";
+
+        document.getElementById("display_value").value = calculate(numbers_operators)[numbers_operators.length-2];
+
+    }
+}
+
+function applyOperation(a, op, b) {
+  switch (op) {
+    case '*': return a * b;
+    case '/': return a / b;
+    case '+': return a + b;
+    case '-': return a - b;
+  }
+}
+
+function calculate(arr){
+
+    for(const op of ['/', "*"]){
+        
+        for(let i = 0; i < arr.length; i++){
+            if(arr[i] == op){
+
+                const result = applyOperation(arr[i-1], arr[i], arr[i+1]);
+                arr.splice(i-1, 3, result);
+
+                i = Math.max(i - 2, 0)
+            }
+        }
+
+    }
+
+    for(let i = 0; i < arr.length; i++){
+
+        if(arr[i] == "+"){
+
+            const result = applyOperation(arr[i-1], arr[i], arr[i+1]);
+            arr.splice(i-1, 3, result);
+
+            i = Math.max(i-2, 0);
+        }
+        else if(arr[i] == "-"){
+
+            const result = applyOperation(arr[i-1], arr[i], arr[i+1]);
+            arr.splice(i-1, 3, result);
+
+            i = Math.max(i-2, 0);
+        }
+    }
+    
+    return arr;
+
+}
+
+document.addEventListener("keydown", function(event){
+
+    const key = event.key;
+    const matchedButton = document.querySelector(`button[value="${key}"]`);
+
+    if(matchedButton && matchedButton.classList.contains("V")){
+        handleInput(key, "number");
+    }else if(matchedButton && matchedButton.classList.contains("operator")){
+        handleInput(key, "operator");
+    }else if(key === "Enter"){
+        handleInput(key, "equals");
     }
 
 });
+
+for(let i = 0; i < totalButtons; i++){
+    document.querySelectorAll("button")[i].addEventListener("click", function(){
+
+        const value = this.value;
+
+        if(this.classList.contains("V")){
+            handleInput(value, "number");
+        }else if(this.classList.contains("operator")){
+            handleInput(value, "operator");
+        }else if(this.classList.contains("equals")){
+            handleInput(value, "equals");
+        }
+
+    })
+}
+
+// let numbers_operators = [2, '+', 9, '*', 8, '+', 3, '-', 885, '+', 7, '*', 52, 'Enter', 57, '+', 2, 'Enter'];
+
+// let numbers_operators1 = [2 , '+', 3, '+', 6, 'Enter', 2, 'Enter', 5, 'Enter'] // 11 
+// let numbers_operators2 = [2, '+', 3, '+', 6, 'Enter', 2, '+', 3, 'Enter']; // 5
+// Need to add chained evaluation feature
+
+// let lastOperator = null;
+// let lastOperand = null;
+
+
+// for(var i = 0 ; i < numbers_operators1.length ; i++){
+//     if(typeof numbers_operators1[i] === "string" && (numbers_operators1[i] == "+" || numbers_operators1[i] == "-" || numbers_operators1[i] == "/" || numbers_operators1[i] == "*") && 
+//     typeof numbers_operators1[i+1] === "number"){
+//         lastOperand = numbers_operators1[i];
+//         lastOperator = numbers_operators1[i+1];
+//     }
+// }
+
+// console.log(lastOperator);
+// console.log(lastOperand);
